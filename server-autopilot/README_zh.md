@@ -10,7 +10,7 @@
 
 - **智能解析** — 支持 key=value、JSON、YAML、INI、自由文本等多种格式，自动提取 FTP 和 MySQL 连接信息
 - **连通性测试** — 自动测试 FTP 和 MySQL 是否可达，只读操作，零风险
-- **凭据记忆** — 连接成功后自动保存到本地 memory，跨对话复用，无需重复提供配置文件
+- **凭据按需复用** — 连接成功后可按需保存非秘密信息，用户授权后可保存密码，跨会话复用
 - **确认模式** — FTP 上传和 SQL 执行前强制弹出确认，展示操作详情，批准后才执行
 - **SQL 诊断** — 遇到 SQL 错误时提供具体诊断建议，覆盖常见 MySQL 错误码（1064/1054/1146/1062/1452）
 
@@ -74,7 +74,7 @@ mysql_db=my_database
 ```
 Phase 1: 读取凭据（优先从 memory 加载，否则解析配置文件）
 Phase 2: 测试连通性（只读，安全）
-Phase 3: 保存到 memory（跨会话复用）
+Phase 3: 保存非秘密信息到 memory（密码需用户同意才保存）
 Phase 4: 部署操作（写操作，需用户确认）
 ```
 
@@ -90,26 +90,24 @@ Phase 4: 部署操作（写操作，需用户确认）
 
 ## 安装
 
-### 方式一：SkillHub
+### 方式一：npx（推荐）
+
+```bash
+npx @kaiii-create/kai-skills install server-autopilot -t codex
+```
+
+### 方式二：SkillHub（备选）
 
 <a href="https://skillhub.cn/skills/server-autopilot" target="_blank">在 SkillHub 中打开</a>，点击 **安装** 即可。
 
-### 方式二：手动安装
-
-将 `server-autopilot/SKILL.md` 复制到技能目录：
-
-```
-# Windows
-%USERPROFILE%\.qoderworkcn\skills\server-autopilot\SKILL.md
-
-# macOS / Linux
-~/.qoderworkcn/skills/server-autopilot/SKILL.md
-```
-
 ## 安全说明
 
-- 密码始终以 `****` 遮盖显示，不会明文输出
-- 凭据仅存储在本地 memory 中，不写入项目文件或 git
+- 密码不再通过命令行参数传递 —— MySQL 使用 defaults file（`--defaults-extra-file`），FTP 使用 `curl --user`
+- 默认只持久化保存非秘密信息（host/port/user/remote_dir/database），密码仅在用户明确同意后才保存
+- 不得宣称所有平台 memory 都是本地/加密/不同步，需以运行平台实际行为为准
+- 优先推荐 SFTP/FTPS；普通 FTP 为明文传输，必须提示风险
+- 不得把密码写入 Shell 历史
+- 日志必须脱敏（密码以 `****` 遮盖）
 - 说"清除凭据"可随时删除已保存的连接信息
 - 所有写操作（上传、SQL）执行前必须用户确认
 

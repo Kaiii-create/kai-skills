@@ -10,7 +10,7 @@ An Agent Skill that automates server deployment workflows — from credential pa
 
 - **Smart Parsing** — Supports key=value, JSON, YAML, INI, and freeform text; automatically extracts FTP and MySQL connection info
 - **Connectivity Testing** — Tests FTP and MySQL reachability with read-only operations, zero risk
-- **Credential Memory** — Saves credentials to local memory after successful connection; reuse across sessions
+- **Credential Reuse on Demand** — After a successful connection, non-secret info can be saved on demand; passwords are saved only with explicit user consent, for cross-session reuse
 - **Confirmation Mode** — Requires explicit user approval before FTP uploads and SQL execution, with full operation preview
 - **SQL Diagnostics** — Provides specific fix suggestions for common MySQL error codes (1064/1054/1146/1062/1452)
 
@@ -74,7 +74,7 @@ mysql_db=my_database
 ```
 Phase 1: Load credentials (memory first, then config file)
 Phase 2: Test connectivity (read-only, safe)
-Phase 3: Save to memory (cross-session reuse)
+Phase 3: Save non-secret info to memory (passwords only with user consent)
 Phase 4: Deploy operations (write, requires user confirmation)
 ```
 
@@ -90,26 +90,24 @@ Uses built-in system tools — no extra installation required:
 
 ## Installation
 
-### Method 1: SkillHub
+### Method 1: npx (recommended)
+
+```bash
+npx @kaiii-create/kai-skills install server-autopilot -t codex
+```
+
+### Method 2: SkillHub (alternative)
 
 <a href="https://skillhub.cn/skills/server-autopilot" target="_blank">Open in SkillHub</a> and click **Install**.
 
-### Method 2: Manual Install
-
-Copy `server-autopilot/SKILL.md` to your skills directory:
-
-```
-# Windows
-%USERPROFILE%\.qoderworkcn\skills\server-autopilot\SKILL.md
-
-# macOS / Linux
-~/.qoderworkcn/skills/server-autopilot/SKILL.md
-```
-
 ## Security
 
-- Passwords are always masked as `****`, never shown in plain text
-- Credentials are stored in local memory only — not written to project files or git
+- Passwords are never passed as command-line arguments — MySQL uses a defaults file (`--defaults-extra-file`), FTP uses `curl --user`
+- By default, only non-secret info (host/port/user/remote_dir/database) is persisted; passwords are saved only after explicit user consent
+- Do not assume all platforms keep memory local/encrypted/un-synchronized — verify the actual behavior of the running platform
+- SFTP/FTPS is strongly recommended; plain FTP transmits credentials in clear text and the risk must be called out
+- Passwords are never written into shell history
+- All logs are redacted (passwords masked as `****`)
 - Say "clear credentials" to delete saved connection info at any time
 - All write operations (uploads, SQL) require explicit user confirmation
 

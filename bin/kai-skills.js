@@ -9,13 +9,12 @@ const path = require('path');
 const os = require('os');
 
 // ===== 平台目录映射表(2026-07 检索确认)=====
-// 用户级 ~/.xxx/skills  |  项目级 ./.xxx/skills
 // 各平台实际读取的目录(已对照官方文档/教程核实):
 //   codex   → ~/.agents/skills     (OpenAI 官方文档确认,走 agentskills.io 标准)
 //   claude  → ~/.claude/skills     (Anthropic 自家格式)
 //   cursor  → ~/.cursor/skills     (内置 skill 在 ~/.cursor/skills-cursor/,用户装的在 ~/.cursor/skills/)
 //   trae    → ~/.trae/skills       (字节官方教程确认,专属目录)
-//   qoder   → 靠 OpenSkills 写 AGENTS.md,不读独立 skills 目录
+//   qoder   → 靠 OpenSkills 写 AGENTS.md,不读独立 skills 目录(仅项目级可靠)
 //   copilot → ~/.github/skills     (GitHub 生态)
 const PLATFORMS = {
   codex: {
@@ -45,7 +44,7 @@ const PLATFORMS = {
   qoder: {
     label: 'Qoder (via OpenSkills)',
     // Qoder 不读独立 skills 目录,靠 OpenSkills 把 skill 注册进 AGENTS.md
-    // 这里落到 .agents/skills 作为兼容存放点,并提示用户需配合 OpenSkills
+    // 用户级安装不可靠(AGENTS.md 只在项目目录生效),故用户级时给出强警告
     user: () => path.join(os.homedir(), '.agents', 'skills'),
     project: () => path.join(process.cwd(), '.agents', 'skills'),
     detect: () => path.join(os.homedir(), '.qoder'),
@@ -58,6 +57,8 @@ const PLATFORMS = {
     detect: () => path.join(os.homedir(), '.github'),
   },
 };
+
+const PLATFORM_KEYS = Object.keys(PLATFORMS);
 
 // skill 仓库根目录(bin 的上一级)
 const SKILLS_ROOT = path.join(__dirname, '..');
@@ -72,7 +73,7 @@ function listAvailableSkills() {
 
 // 自动检测本机已安装哪些平台(检查对应配置目录是否存在)
 function detectInstalledPlatforms() {
-  return Object.keys(PLATFORMS).filter(p => fs.existsSync(PLATFORMS[p].detect()));
+  return PLATFORM_KEYS.filter(p => fs.existsSync(PLATFORMS[p].detect()));
 }
 
 function ensureDir(dir) {
@@ -91,7 +92,64 @@ function copySkill(skillName, destDir) {
   return dest;
 }
 
-// 解析 -t / --auto,返回平台 key 数组
+// 已知的布尔型开关参数
+const BOOL_FLAGS = new Set(['-p', '--project', '-a', '--auto', '--installed']);
+
+// 自定义错误类,带退出码
+class CliError extends Error {
+  constructor(message, code = 1) {
+    super(message);
+    this.code = code;
+  }
+}
+
+// 解析 install 子命令的参数,严格校验
+function parseInstallArgs(rest) {
+  if (rest.length === 0) {
+    throw new CliError('缺少 skill 名称。用法: kai-skills install <skill|all>');
+  }
+
+  const skillName = rest[0];
+  if (skillName.startsWith('-')) {
+    throw new CliError(`缺少 skill 名称(得到选项 "${skillName}")。用法: kai-skills install <skill|all>`);
+  }
+
+  const project = rest.includes('-p') || rest.includes('--project');
+  const auto = rest.includes('-a') || rest.includes('--auto');
+
+  // 解析 -t / --target
+  let targetsArg = null;
+  const tIdx = rest.findIndex(a => a === '-t' || a === '--target');
+  if (tIdx !== -1) {
+    const next = rest[tIdx + 1];
+    if (!next || next.startsWith('-')) {
+      throw new CliError(`-${rest[tIdx].startsWith('--') ? '-' : ''}t / --target 需要一个值。可用平台: ${PLATFORM_KEYS.join(', ')}`);
+    }
+    targetsArg = next;
+  }
+
+  // --auto 和 --target 互斥
+  if (auto && targetsArg) {
+    throw new CliError('--auto 和 --target 不能同时使用。请二选一。');
+  }
+
+  // 校验未知参数(遍历所有 token,既不是 skillName、也不是已知 flag、也不是 -t 的值)
+  const knownTokens = new Set([skillName, '-p', '--project', '-a', '--auto']);
+  if (tIdx !== -1) {
+    knownTokens.add('-t');
+    knownTokens.add('--target');
+    knownTokens.add(targetsArg);
+  }
+  for (const tok of rest) {
+    if (!knownTokens.has(tok)) {
+      throw new CliError(`未知参数: ${tok}`);
+    }
+  }
+
+  return { skillName, project, auto, targetsArg };
+}
+
+// 解析平台参数字符串,返回去重后的平台 key 数组
 function resolveTargets(targetsArg, auto) {
   let targets;
   if (auto) {
@@ -106,24 +164,35 @@ function resolveTargets(targetsArg, auto) {
   } else {
     targets = targetsArg.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
   }
+
+  if (targets.length === 0) {
+    throw new CliError('未指定任何平台。可用平台: ' + PLATFORM_KEYS.join(', '));
+  }
+
   const invalid = targets.filter(t => !PLATFORMS[t]);
   if (invalid.length) {
-    console.error(`✗ 未知平台: ${invalid.join(', ')}`);
-    console.error(`  可用平台: ${Object.keys(PLATFORMS).join(', ')}`);
-    process.exit(1);
+    throw new CliError(`未知平台: ${invalid.join(', ')}。可用平台: ${PLATFORM_KEYS.join(', ')}`);
   }
+
+  // 去重(保持顺序)
+  const seen = new Set();
+  targets = targets.filter(t => {
+    if (seen.has(t)) return false;
+    seen.add(t);
+    return true;
+  });
+
   return targets;
 }
 
+// 安装逻辑,可被测试调用
 function install(skillName, targets, project) {
   const available = listAvailableSkills();
   const skills = skillName === 'all' ? available : [skillName];
 
   const invalidSkill = skills.find(s => !available.includes(s));
   if (invalidSkill) {
-    console.error(`✗ 未知 skill: ${invalidSkill}`);
-    console.error(`  可用 skill: ${available.join(', ')}`);
-    process.exit(1);
+    throw new CliError(`未知 skill: ${invalidSkill}。可用 skill: ${available.join(', ')}`);
   }
 
   // 按实际目标目录分组,合并共用目录的平台标签(避免重复拷贝)
@@ -138,35 +207,64 @@ function install(skillName, targets, project) {
   }
 
   const scope = project ? '项目级' : '用户级';
-  console.log('');
+  const lines = [];
+  lines.push('');
   for (const [dir, labels] of dirToLabels) {
     for (const skill of skills) {
       const dest = copySkill(skill, dir);
-      console.log(`✓ [${labels.join(' / ')}] (${scope}) ${skill} → ${dest}`);
+      lines.push(`✓ [${labels.join(' / ')}] (${scope}) ${skill} → ${dest}`);
     }
   }
-  console.log('');
+  lines.push('');
+
+  let qoderWarned = false;
   if (openSkillsPlatforms.length) {
-    console.log(`⚠ ${openSkillsPlatforms.join('、')} 不直接读 skills 目录,需配合 OpenSkills 生效:`);
-    console.log('  npx openskills install .  # 在项目根目录执行,把 skill 写入 AGENTS.md');
-    console.log('');
+    qoderWarned = true;
+    if (!project) {
+      // 用户级安装 Qoder 不可靠:AGENTS.md 只在项目目录生效
+      lines.push(`⚠ ${openSkillsPlatforms.join('、')} 的用户级安装不会自动生效。`);
+      lines.push('  OpenSkills 通过 AGENTS.md 注册 skill,而 AGENTS.md 只在项目目录中被读取。');
+      lines.push('  建议改用项目级安装: 加 --project 参数,在目标项目根目录执行。');
+      lines.push('  或在项目根目录手动执行: npx openskills install .');
+    } else {
+      lines.push(`⚠ ${openSkillsPlatforms.join('、')} 不直接读 skills 目录,文件已复制但还需注册:`);
+      lines.push('  请在当前项目根目录执行: npx openskills install .');
+      lines.push('  (该命令会把 skill 写入 AGENTS.md,Qoder 才能识别)');
+    }
+    lines.push('');
   }
-  console.log('完成。重启对应的 AI 工具即可使用新 skill。');
+
+  if (qoderWarned) {
+    lines.push('部分平台需要额外步骤,请查看上方提示。其余平台重启 AI 工具即可使用。');
+  } else {
+    lines.push('完成。重启对应的 AI 工具即可使用新 skill。');
+  }
+
+  console.log(lines.join('\n'));
+  return { qoderWarned };
 }
 
 function cmdList(installed) {
   if (installed) {
     console.log('已安装的 skill(用户级):');
+    // 多个平台可能共用同一目录,用目录去重避免重复显示
+    const seenDirs = new Set();
     let found = false;
-    for (const p of Object.values(PLATFORMS)) {
+    for (const key of PLATFORM_KEYS) {
+      const p = PLATFORMS[key];
       const dir = p.user();
+      if (seenDirs.has(dir)) continue; // 同一目录只显示一次
       if (fs.existsSync(dir)) {
+        seenDirs.add(dir);
         const skills = fs.readdirSync(dir, { withFileTypes: true })
           .filter(e => e.isDirectory())
           .map(e => e.name);
         if (skills.length) {
           found = true;
-          console.log(`  [${p.label}] ${dir}`);
+          // 找出所有共用此目录的平台标签
+          const sharedKeys = PLATFORM_KEYS.filter(k => PLATFORMS[k].user() === dir);
+          const label = sharedKeys.map(k => PLATFORMS[k].label).join(' / ');
+          console.log(`  [${label}] ${dir}`);
           skills.forEach(s => console.log(`    - ${s}`));
         }
       }
@@ -208,6 +306,7 @@ kai-skills — Agent Skills 安装器
   -t, --target <平台>    目标平台,逗号分隔: codex,claude,cursor,qoder,trae,copilot
   -p, --project          装到当前目录(项目级)而非用户主目录
   -a, --auto             自动检测本机已安装的平台,全部安装
+                          (不能与 --target 同时使用)
 
 示例:
   kai-skills install server-autopilot -t codex
@@ -223,49 +322,82 @@ kai-skills — Agent Skills 安装器
   claude   →  ~/.claude/skills/
   cursor   →  ~/.cursor/skills/
   trae     →  ~/.trae/skills/
-  qoder    →  ~/.agents/skills/(需配合 OpenSkills 写入 AGENTS.md)
+  qoder    →  ~/.agents/skills/ (用户级不生效,需项目级 + OpenSkills)
   copilot  →  ~/.github/skills/
+
+注意:
+  - qoder 不直接读 skills 目录,需配合 OpenSkills 注册到 AGENTS.md
+  - qoder 用户级安装不会自动生效,建议使用 --project 在项目根目录安装
+  - 安装到 qoder 后,在项目根目录执行: npx openskills install .
 `.trim());
 }
 
-// ===== 参数解析 =====
-function main() {
-  const args = process.argv.slice(2);
-  if (args.length === 0) { help(); return; }
+// ===== 主入口 =====
+function main(argv) {
+  const args = argv || process.argv.slice(2);
+  if (args.length === 0) { help(); return 0; }
 
   const cmd = args[0];
-  if (cmd === '--help' || cmd === '-h') { help(); return; }
+  if (cmd === '--help' || cmd === '-h') { help(); return 0; }
   if (cmd === '--version' || cmd === '-v') {
     const pkg = require('../package.json');
     console.log(pkg.version);
-    return;
+    return 0;
   }
 
   if (cmd === 'list') {
+    // 校验 list 的参数,只允许 --installed
+    const extra = args.slice(1).filter(a => a !== '--installed');
+    if (extra.length) {
+      console.error(`✗ list 命令不支持参数: ${extra.join(', ')}`);
+      return 1;
+    }
     cmdList(args.includes('--installed'));
-    return;
+    return 0;
   }
 
   if (cmd === 'install') {
-    const rest = args.slice(1);
-    if (rest.length === 0) {
-      console.error('✗ 缺少 skill 名称。用法: kai-skills install <skill|all>');
-      process.exit(1);
+    try {
+      const { skillName, project, auto, targetsArg } = parseInstallArgs(args.slice(1));
+      const targets = resolveTargets(targetsArg, auto);
+      install(skillName, targets, project);
+      return 0;
+    } catch (e) {
+      if (e instanceof CliError) {
+        console.error(`✗ ${e.message}`);
+        return e.code;
+      }
+      throw e;
     }
-    const skillName = rest[0];
-    const project = rest.includes('-p') || rest.includes('--project');
-    const auto = rest.includes('-a') || rest.includes('--auto');
-    let targetsArg = null;
-    const tIdx = rest.findIndex(a => a === '-t' || a === '--target');
-    if (tIdx !== -1 && rest[tIdx + 1]) targetsArg = rest[tIdx + 1];
-    const targets = resolveTargets(targetsArg, auto);
-    install(skillName, targets, project);
-    return;
   }
 
   console.error(`✗ 未知命令: ${cmd}`);
-  help();
-  process.exit(1);
+  console.error('运行 kai-skills --help 查看用法');
+  return 1;
 }
 
-main();
+// 如果直接运行(非被 require),执行 main 并设置退出码
+if (require.main === module) {
+  try {
+    const code = main();
+    if (code !== 0) process.exit(code);
+  } catch (e) {
+    console.error(`✗ ${e.message || e}`);
+    process.exit(1);
+  }
+}
+
+// 导出供测试使用
+module.exports = {
+  PLATFORMS,
+  PLATFORM_KEYS,
+  listAvailableSkills,
+  detectInstalledPlatforms,
+  parseInstallArgs,
+  resolveTargets,
+  install,
+  copySkill,
+  main,
+  SKILLS_ROOT,
+  CliError,
+};

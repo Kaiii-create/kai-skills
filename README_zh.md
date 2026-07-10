@@ -46,7 +46,7 @@ npx @kaiii-create/kai-skills install all -t codex --project
 | `qoder` | `~/.agents/skills/` | `./.agents/skills/`（需配合 OpenSkills） |
 | `copilot` | `~/.github/skills/` | `./.github/skills/` |
 
-> 各平台读取各自的专属 skills 目录。只有 `codex` 采用 [agentskills.io](https://agentskills.io/) 的跨平台标准目录 `~/.agents/skills/`。`qoder` 不直接读 skills 目录，装完后需在项目根目录执行 `npx openskills install .` 把 skill 注册进 `AGENTS.md`。
+> 各平台读取各自的专属 skills 目录。只有 `codex` 采用 [agentskills.io](https://agentskills.io/) 的跨平台标准目录 `~/.agents/skills/`。`qoder` 不直接读 skills 目录，用户级安装不会自动生效；建议使用 `--project` 在项目根目录安装，安装后需执行 `npx openskills install .` 把 skill 注册进 `AGENTS.md`。
 
 其他命令：
 
@@ -107,15 +107,17 @@ kai-skills/
 ├── package.json              # npm 包定义(发布用)
 ├── bin/
 │   └── kai-skills.js         # CLI 安装器(发布用)
+├── test/
+│   └── test.js               # 测试套件
+├── .github/workflows/        # CI/CD 配置
 ├── README.md
 ├── README_zh.md
+├── CHANGELOG.md
 ├── LICENSE
-├── server-autopilot/         # ← skill 内容
-│   ├── SKILL.md
-│   ├── README.md
-│   └── README_zh.md
-└── weather/                  # ← 假设以后新增的 skill
-    └── SKILL.md
+└── server-autopilot/         # ← skill 内容
+    ├── SKILL.md
+    ├── README.md
+    └── README_zh.md
 ```
 
 仓库里有两类东西:

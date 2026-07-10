@@ -1,17 +1,23 @@
 {
   "name": "@kaiii-create/kai-skills",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reusable Agent Skills installer for Codex / Claude / Cursor / Qoder / Trae / GitHub Copilot.",
   "bin": {
     "kai-skills": "bin/kai-skills.js"
   },
+  "scripts": {
+    "test": "node --test test/test.js",
+    "pack:check": "npm pack --dry-run"
+  },
   "files": [
     "bin/",
     "server-autopilot/",
-    "README.md"
+    "README.md",
+    "README_zh.md",
+    "LICENSE"
   ],
   "engines": {
-    "node": ">=16.7.0"
+    "node": ">=18.0.0"
   },
   "license": "MIT",
   "repository": {

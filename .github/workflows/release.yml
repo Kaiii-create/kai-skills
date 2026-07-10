@@ -1,0 +1,43 @@
+name: Release
+
+# 仅在推送 v* 开头的 tag 时触发
+# 发布前请确认 tag 格式为 v0.1.2 等(语义化版本,带 v 前缀)
+# 不会自动发布,需要手动打 tag 触发本工作流
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    # 需要 NPM_TOKEN secret 才能发布
+    environment: release
+
+    permissions:
+      contents: read
+      id-token: write  # npm publish --provenance 需要 id-token 写权限
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance
+        env:
+          # 通过 NODE_AUTH_TOKEN 环境变量传入 NPM_TOKEN secret
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

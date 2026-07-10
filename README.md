@@ -46,7 +46,7 @@ Supported platforms (`-t` / `--target`):
 | `qoder` | `~/.agents/skills/` | `./.agents/skills/` (needs OpenSkills) |
 | `copilot` | `~/.github/skills/` | `./.github/skills/` |
 
-> Each platform reads its own dedicated skills directory. Only `codex` uses the cross-platform `~/.agents/skills/` standard from [agentskills.io](https://agentskills.io/). `qoder` does not read a skills directory directly — run `npx openskills install .` afterwards to register the skill into `AGENTS.md`.
+> Each platform reads its own dedicated skills directory. Only `codex` uses the cross-platform `~/.agents/skills/` standard from [agentskills.io](https://agentskills.io/). `qoder` does not read a skills directory directly — user-level installs will not take effect automatically. It is recommended to install at the project root with `--project`, then run `npx openskills install .` to register the skill into `AGENTS.md`.
 
 Other commands:
 
