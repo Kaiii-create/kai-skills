@@ -276,26 +276,6 @@ describe('空 target 测试', () => {
 describe('用户级临时 HOME 安装', () => {
   const CLI_PATH = path.join(PROJECT_ROOT, 'bin', 'kai-skills.js');
 
-  // 在子进程中用临时 HOME/USERPROFILE 运行 CLI,避免污染真实用户目录
-  function runCliWithTempHome(args) {
-    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kai-home-test-'));
-    try {
-      const env = {
-        ...process.env,
-        HOME: tmpHome,
-        USERPROFILE: tmpHome,  // Windows 上 os.homedir() 读 USERPROFILE
-      };
-      const output = execFileSync(process.execPath, [CLI_PATH, ...args], {
-        env,
-        encoding: 'utf8',
-        timeout: 15000,
-      });
-      return { output, tmpHome };
-    } finally {
-      // 注意: tmpHome 由调用方在验证后清理,这里只确保异常时也清理
-    }
-  }
-
   test('用户级安装 server-autopilot 到 codex → 临时 HOME 下 SKILL.md 存在', () => {
     const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kai-home-test-'));
     try {

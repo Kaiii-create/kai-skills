@@ -265,6 +265,9 @@ trap 'rm -f "$CurlConfig"' EXIT INT TERM
 
 curl --config "$CurlConfig" -T "local_file" ftp://HOST:PORT/REMOTE_PATH/
 
+# Verify the upload BEFORE cleanup (reuse the same config file)
+curl -s --config "$CurlConfig" ftp://HOST:PORT/REMOTE_PATH/
+
 rm -f "$CurlConfig"
 trap - EXIT INT TERM
 ```
@@ -284,6 +287,9 @@ for file in $(find LOCAL_DIR -type f); do
   curl --config "$CurlConfig" -T "$file" "ftp://HOST:PORT/REMOTE_DIR/$relative"
 done
 
+# Verify the upload BEFORE cleanup (reuse the same config file)
+curl -s --config "$CurlConfig" ftp://HOST:PORT/REMOTE_DIR/
+
 rm -f "$CurlConfig"
 trap - EXIT INT TERM
 ```
@@ -298,14 +304,11 @@ try {
         $relative = $_.FullName.Substring("LOCAL_DIR".Length).Replace("\","/")
         curl.exe --config $curlConfig -T $_.FullName "ftp://HOST:PORT/REMOTE_DIR/$relative"
     }
+    # Verify the upload BEFORE cleanup
+    curl.exe -s --config $curlConfig ftp://HOST:PORT/REMOTE_DIR/
 } finally {
     Remove-Item -Force $curlConfig -ErrorAction SilentlyContinue
 }
-```
-
-After upload, list the remote directory to verify (reuse the same config file, same masking rules):
-```bash
-curl -s --config "$CurlConfig" ftp://HOST:PORT/REMOTE_DIR/
 ```
 
 ### 4B — SQL Execution

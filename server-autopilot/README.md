@@ -102,7 +102,7 @@ npx @kaiii-create/kai-skills install server-autopilot -t codex
 
 ## Security
 
-- Passwords are never passed as command-line arguments — MySQL uses a defaults file (`--defaults-extra-file`), FTP uses `curl --user`
+- Passwords are never passed as command-line arguments — MySQL uses a temporary defaults file (`--defaults-extra-file`, permission `0600`, cleaned via `trap`), FTP uses a temporary curl config file (`--config`, permission `0600`, cleaned via `trap`)
 - By default, only non-secret info (host/port/user/remote_dir/database) is persisted; passwords are saved only after explicit user consent
 - Do not assume all platforms keep memory local/encrypted/un-synchronized — verify the actual behavior of the running platform
 - SFTP/FTPS is strongly recommended; plain FTP transmits credentials in clear text and the risk must be called out

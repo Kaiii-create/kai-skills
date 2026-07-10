@@ -102,7 +102,7 @@ npx @kaiii-create/kai-skills install server-autopilot -t codex
 
 ## 安全说明
 
-- 密码不再通过命令行参数传递 —— MySQL 使用 defaults file（`--defaults-extra-file`），FTP 使用 `curl --user`
+- 密码不再通过命令行参数传递 —— MySQL 使用临时 defaults file（`--defaults-extra-file`，权限 `0600`，`trap` 清理），FTP 使用临时 curl 配置文件（`--config`，权限 `0600`，`trap` 清理）
 - 默认只持久化保存非秘密信息（host/port/user/remote_dir/database），密码仅在用户明确同意后才保存
 - 不得宣称所有平台 memory 都是本地/加密/不同步，需以运行平台实际行为为准
 - 优先推荐 SFTP/FTPS；普通 FTP 为明文传输，必须提示风险
