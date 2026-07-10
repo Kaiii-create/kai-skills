@@ -16,7 +16,47 @@
 
 ## 安装
 
-### Codex：用户级安装
+### 通过 npx 一键安装（推荐）
+
+```bash
+# 安装单个技能到 Codex
+npx @kaiii-create/kai-skills install server-autopilot -t codex
+
+# 安装单个技能到多个平台
+npx @kaiii-create/kai-skills install server-autopilot -t codex,claude
+
+# 安装全部技能到指定平台
+npx @kaiii-create/kai-skills install all -t claude
+
+# 自动检测本机已安装的 AI 工具，全部安装
+npx @kaiii-create/kai-skills install all --auto
+
+# 项目级安装（装到当前目录，便于提交到 Git 共享）
+npx @kaiii-create/kai-skills install all -t codex --project
+```
+
+支持的平台（`-t` / `--target`）：
+
+| 平台 | 用户级目录 | 项目级目录 |
+|------|-----------|-----------|
+| `codex` | `~/.agents/skills/` | `./.agents/skills/` |
+| `claude` | `~/.claude/skills/` | `./.claude/skills/` |
+| `cursor` | `~/.cursor/skills/` | `./.cursor/skills/` |
+| `trae` | `~/.trae/skills/` | `./.trae/skills/` |
+| `qoder` | `~/.agents/skills/` | `./.agents/skills/`（需配合 OpenSkills） |
+| `copilot` | `~/.github/skills/` | `./.github/skills/` |
+
+> 各平台读取各自的专属 skills 目录。只有 `codex` 采用 [agentskills.io](https://agentskills.io/) 的跨平台标准目录 `~/.agents/skills/`。`qoder` 不直接读 skills 目录，装完后需在项目根目录执行 `npx openskills install .` 把 skill 注册进 `AGENTS.md`。
+
+其他命令：
+
+```bash
+npx @kaiii-create/kai-skills list                # 列出可安装的技能
+npx @kaiii-create/kai-skills list --installed    # 列出本机已安装的技能
+npx @kaiii-create/kai-skills --help
+```
+
+### 手动安装（git clone）
 
 用户级技能可在不同项目中使用。将完整技能目录复制到 `~/.agents/skills/`：
 
@@ -27,8 +67,6 @@ cp -R kai-skills/server-autopilot ~/.agents/skills/
 ```
 
 安装后启动一个新的 Codex 会话，并使用自然语言描述任务；也可以通过技能名称显式调用。
-
-### Codex：项目级安装
 
 如需让仓库内的协作者共享技能，可将技能目录放在项目的 `.agents/skills/` 中并提交到 Git：
 

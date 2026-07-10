@@ -16,7 +16,47 @@ These skills follow a portable directory structure centered on `SKILL.md` and ha
 
 ## Installation
 
-### Codex: User-level installation
+### One-line install via npx (recommended)
+
+```bash
+# Install a single skill to Codex
+npx @kaiii-create/kai-skills install server-autopilot -t codex
+
+# Install a single skill to multiple platforms
+npx @kaiii-create/kai-skills install server-autopilot -t codex,claude
+
+# Install ALL skills to a specific platform
+npx @kaiii-create/kai-skills install all -t claude
+
+# Auto-detect installed AI tools and install to all of them
+npx @kaiii-create/kai-skills install all --auto
+
+# Project-level install (into the current directory, commit-friendly)
+npx @kaiii-create/kai-skills install all -t codex --project
+```
+
+Supported platforms (`-t` / `--target`):
+
+| Platform | User-level dir | Project-level dir |
+|----------|----------------|-------------------|
+| `codex` | `~/.agents/skills/` | `./.agents/skills/` |
+| `claude` | `~/.claude/skills/` | `./.claude/skills/` |
+| `cursor` | `~/.cursor/skills/` | `./.cursor/skills/` |
+| `trae` | `~/.trae/skills/` | `./.trae/skills/` |
+| `qoder` | `~/.agents/skills/` | `./.agents/skills/` (needs OpenSkills) |
+| `copilot` | `~/.github/skills/` | `./.github/skills/` |
+
+> Each platform reads its own dedicated skills directory. Only `codex` uses the cross-platform `~/.agents/skills/` standard from [agentskills.io](https://agentskills.io/). `qoder` does not read a skills directory directly — run `npx openskills install .` afterwards to register the skill into `AGENTS.md`.
+
+Other commands:
+
+```bash
+npx @kaiii-create/kai-skills list                # list available skills
+npx @kaiii-create/kai-skills list --installed    # list skills already installed on this machine
+npx @kaiii-create/kai-skills --help
+```
+
+### Manual install (git clone)
 
 User-level skills are available across projects. Copy the complete skill directory into `~/.agents/skills/`:
 
@@ -27,8 +67,6 @@ cp -R kai-skills/server-autopilot ~/.agents/skills/
 ```
 
 Start a new Codex session after installation and describe the task in natural language. You can also invoke the skill explicitly by name.
-
-### Codex: Project-level installation
 
 To share a skill with collaborators in a repository, place it under the project's `.agents/skills/` directory and commit it to Git:
 
