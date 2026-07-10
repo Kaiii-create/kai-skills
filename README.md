@@ -1,34 +1,28 @@
-# kai-skills
+# Kai Agent Skills
 
-QoderWork Agent Skills 合集 — 为日常开发和运维场景打造的实用技能包。
+**[中文](#中文说明)**
 
-## Skills 列表
+A collection of practical Agent Skills for [QoderWork](https://qoder.com), designed to automate everyday development and operations workflows.
 
-| Skill | 描述 | 状态 |
-|-------|------|------|
-| [server-autopilot](./server-autopilot/) | 从配置文件智能识别 FTP/MySQL 凭据，自动测试连通性，一键上传代码和执行 SQL | Stable |
+## Available Skills
 
-> 后续会持续添加更多 Skill，欢迎 Star 和关注。
+| Skill | Description | Status |
+|-------|-------------|--------|
+| [server-autopilot](./server-autopilot/) | Smart FTP/MySQL credential parsing, connectivity testing, one-click code deployment and SQL execution | Stable |
 
-## 什么是 QoderWork Skills？
+> More skills coming soon. Star & Watch to stay updated.
 
-Skills 是 QoderWork 的技能扩展机制。每个 Skill 本质上是一份 `SKILL.md` 指令文件，告诉 AI Agent 在特定场景下该如何工作。安装后，你只需用自然语言描述需求，Agent 就会自动加载对应的 Skill 并执行。
+## Installation
 
-## 安装方式
+### Method 1: SkillHub
 
-### 通过 SkillHub（推荐）
+Visit the skill page and click **Install**:
 
-在 [SkillHub](https://skillhub.cn/) 搜索 Skill 名称，一键安装。
+<a href="https://skillhub.cn/skills/server-autopilot" target="_blank">Open in SkillHub</a>
 
-### 通过 CLI
+### Method 2: Manual Install
 
-```bash
-npx clawhub install <skill-name>
-```
-
-### 手动安装
-
-将对应 Skill 目录下的 `SKILL.md` 复制到 QoderWork 技能目录：
+Copy the `SKILL.md` file from the skill directory into your QoderWork skills folder:
 
 ```
 # Windows
@@ -38,38 +32,80 @@ npx clawhub install <skill-name>
 ~/.qoderworkcn/skills/<skill-name>/SKILL.md
 ```
 
-## 目录结构
+## Repository Structure
 
 ```
 kai-skills/
-├── README.md                  # 本文件
-├── LICENSE                    # MIT 开源协议
-└── server-autopilot/          # 服务器自动驾驶
-    ├── SKILL.md               # Skill 指令文件
-    └── README.md              # 使用说明
+├── README.md
+├── LICENSE
+└── server-autopilot/
+    ├── SKILL.md
+    └── README.md
 ```
 
-## 贡献与反馈
+Each skill lives in its own directory with a `SKILL.md` (required) and an optional `README.md` for detailed documentation.
 
-- 发现 Bug 或有改进建议？请提交 [Issue](../../issues)
-- 想贡献代码或新 Skill？欢迎提交 Pull Request
+## Contributing
 
-## Troubleshooting
-
-### server-autopilot
-
-**Q: FTP 连接超时？**
-检查服务器防火墙是否开放 21 端口，Skill 会自动尝试被动模式 `--ftp-pasv`。
-
-**Q: MySQL 提示 Access denied？**
-MySQL 用户权限通常绑定来源 IP，需要在服务器端授权你的 IP。
-
-**Q: 上传成功但网站没更新？**
-确认远程目录路径正确，检查服务器是否有 CDN 或 OPcache 缓存。
-
-**Q: 配置文件格式太乱识别错了？**
-Skill 会展示识别结果让你确认，直接告诉 Agent 哪个字段错了即可修正。
+Issues and pull requests are welcome.
 
 ## License
 
-[MIT](LICENSE) — 自由使用、修改和分发。
+[MIT](LICENSE)
+
+---
+
+<a id="中文说明"></a>
+
+## Kai Agent Skills
+
+一系列面向 [QoderWork](https://qoder.com) 的实用 Agent Skills，用于自动化日常开发与运维工作流。
+
+## 可用技能
+
+| 技能 | 说明 | 状态 |
+|------|------|------|
+| [server-autopilot](./server-autopilot/) | 智能解析 FTP/MySQL 凭据、自动测试连通性、一键部署代码与执行 SQL | 稳定版 |
+
+> 更多技能持续添加中，欢迎 Star & Watch 关注更新。
+
+## 安装方式
+
+### 方式一：SkillHub
+
+访问技能页面，点击 **安装** 即可：
+
+<a href="https://skillhub.cn/skills/server-autopilot" target="_blank">在 SkillHub 中打开</a>
+
+### 方式二：手动安装
+
+将对应技能目录下的 `SKILL.md` 复制到 QoderWork 技能目录：
+
+```
+# Windows
+%USERPROFILE%\.qoderworkcn\skills\<技能名>\SKILL.md
+
+# macOS / Linux
+~/.qoderworkcn/skills/<技能名>/SKILL.md
+```
+
+## 仓库结构
+
+```
+kai-skills/
+├── README.md
+├── LICENSE
+└── server-autopilot/
+    ├── SKILL.md
+    └── README.md
+```
+
+每个技能独立一个目录，`SKILL.md` 为必需文件，`README.md` 为可选的详细使用说明。
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request。
+
+## 许可证
+
+[MIT](LICENSE)
