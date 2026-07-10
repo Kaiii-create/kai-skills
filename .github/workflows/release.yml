@@ -1,8 +1,8 @@
 name: Release
 
-# 仅在推送 v* 开头的 tag 时触发
-# 发布前请确认 tag 格式为 v0.1.2 等(语义化版本,带 v 前缀)
-# 不会自动发布,需要手动打 tag 触发本工作流
+# 推送 v<version> 格式的 tag 时自动发布到 npm(例如 v0.1.2)。
+# 工作流会校验 tag 是否严格匹配 package.json 的版本号,如果版本不一致会直接退出。
+# 发布前会运行测试、npm pack --dry-run 预览,并检查该版本是否已在 npm 上发布。
 on:
   push:
     tags:
@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # 需要 NPM_TOKEN secret 才能发布
+    # 可在 GitHub 仓库 Settings → Environments 中配置 release 环境并添加审批保护
     environment: release
 
     permissions:
@@ -33,8 +34,35 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts
 
+      - name: Verify tag matches package.json version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          EXPECTED_TAG="v${PKG_VERSION}"
+          echo "Git tag:      $TAG"
+          echo "Package.json: $EXPECTED_TAG"
+          if [ "$TAG" != "$EXPECTED_TAG" ]; then
+            echo "::error::Tag '$TAG' does not match package.json version '$EXPECTED_TAG'. Push a tag named '$EXPECTED_TAG' to release."
+            exit 1
+          fi
+          echo "Tag matches package.json version."
+
+      - name: Check version is not already published
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "Checking if ${PKG_NAME}@${PKG_VERSION} already exists on npm..."
+          if npm view "${PKG_NAME}@${PKG_VERSION}" version >/dev/null 2>&1; then
+            echo "::error::${PKG_NAME}@${PKG_VERSION} is already published. Bump the version in package.json before releasing."
+            exit 1
+          fi
+          echo "Version ${PKG_VERSION} is not yet published. Proceeding."
+
       - name: Run tests
         run: npm test
+
+      - name: Preview package contents
+        run: npm pack --dry-run
 
       - name: Publish to npm
         run: npm publish --access public --provenance

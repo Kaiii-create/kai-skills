@@ -114,8 +114,27 @@ function parseInstallArgs(rest) {
     throw new CliError(`缺少 skill 名称(得到选项 "${skillName}")。用法: kai-skills install <skill|all>`);
   }
 
-  const project = rest.includes('-p') || rest.includes('--project');
-  const auto = rest.includes('-a') || rest.includes('--auto');
+  // 检测重复布尔选项(出现两次 -p/--project 或 -a/--auto 即报错)
+  function countFlag(short, long) {
+    return rest.filter(a => a === short || a === long).length;
+  }
+  const projectCount = countFlag('-p', '--project');
+  const autoCount = countFlag('-a', '--auto');
+  if (projectCount > 1) {
+    throw new CliError('重复选项: -p / --project 只能出现一次。');
+  }
+  if (autoCount > 1) {
+    throw new CliError('重复选项: -a / --auto 只能出现一次。');
+  }
+
+  // 检测重复 -t / --target 选项
+  const targetFlags = rest.filter(a => a === '-t' || a === '--target');
+  if (targetFlags.length > 1) {
+    throw new CliError('重复选项: -t / --target 只能出现一次。如需多平台请用逗号分隔: -t codex,claude');
+  }
+
+  const project = projectCount === 1;
+  const auto = autoCount === 1;
 
   // 解析 -t / --target
   let targetsArg = null;
@@ -346,13 +365,19 @@ function main(argv) {
   }
 
   if (cmd === 'list') {
-    // 校验 list 的参数,只允许 --installed
-    const extra = args.slice(1).filter(a => a !== '--installed');
+    // 校验 list 的参数,只允许 --installed(且只能出现一次)
+    const listArgs = args.slice(1);
+    const installedCount = listArgs.filter(a => a === '--installed').length;
+    if (installedCount > 1) {
+      console.error('✗ 重复选项: --installed 只能出现一次。');
+      return 1;
+    }
+    const extra = listArgs.filter(a => a !== '--installed');
     if (extra.length) {
       console.error(`✗ list 命令不支持参数: ${extra.join(', ')}`);
       return 1;
     }
-    cmdList(args.includes('--installed'));
+    cmdList(installedCount === 1);
     return 0;
   }
 

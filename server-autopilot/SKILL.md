@@ -116,22 +116,44 @@ Prefer SFTP or FTPS where available. Plain FTP transmits credentials and data in
 
 > ⚠️ Plain FTP is an unencrypted protocol. Credentials and file contents will be transmitted in cleartext. Prefer SFTP/FTPS if the server supports it.
 
-Use `curl --user` so the password is not embedded in the URL. Do NOT echo the full command (including the password) back to the user, and do NOT let it land in shell history.
+Do NOT pass credentials via `--user "USER:PASS"` on the command line — after shell variable expansion the password still ends up in the process argv and is visible in process listings (`ps`), other processes, and audit logs. The same applies to PowerShell variables: `$ftpPass` expansion still puts the password into the child process command line.
+
+Instead, write credentials to a **temporary curl config file** with permission `0600`, reference it with `--config`, and clean up via `trap` so the file is removed even if the command is interrupted:
 
 ```bash
-curl -s -o /dev/null -w "HTTP_CODE:%{http_code}" --connect-timeout 10 \
-  --user "USER:PASS" ftp://HOST:PORT/
+# Generate a temporary curl config file (permission 0600)
+CurlConfig=$(mktemp)
+chmod 0600 "$CurlConfig"
+cat > "$CurlConfig" <<EOF
+user = "USER:PASS"
+connect-timeout = 10
+EOF
+
+trap 'rm -f "$CurlConfig"' EXIT INT TERM
+
+curl -s -o /dev/null -w "HTTP_CODE:%{http_code}" --config "$CurlConfig" ftp://HOST:PORT/
+
+rm -f "$CurlConfig"
+trap - EXIT INT TERM
 ```
 
-To keep the password out of shell history on POSIX shells, prefix with a leading space (if `HISTCONTROL` allows) or set the password via a shell variable passed through the environment:
+Never log the contents of the curl config file. Never echo the password to stdout, logs, or the user.
 
-```bash
-FTP_USER="deploy_user" FTP_PASS='****' curl -s -o /dev/null -w "HTTP_CODE:%{http_code}" \
-  --connect-timeout 10 --user "$FTP_USER:$FTP_PASS" ftp://HOST:PORT/
-unset FTP_USER FTP_PASS
+On Windows (PowerShell), the same risk applies — PowerShell variable expansion does NOT prevent the password from appearing in the child process argv. Use a temporary config file with restrictive ACL and clean it up in `finally`:
+
+```powershell
+$curlConfig = [System.IO.Path]::GetTempFileName()
+# Restrict ACL to current user only
+icacls $curlConfig /inheritance:r /grant:r "$($env:USERNAME):(R,W)"
+"user = `"USER:PASS`"`nconnect-timeout = 10" | Set-Content -Path $curlConfig -NoNewline
+try {
+    curl.exe -s -o NUL -w "HTTP_CODE:%{http_code}" --config $curlConfig ftp://HOST:PORT/
+} finally {
+    Remove-Item -Force $curlConfig -ErrorAction SilentlyContinue
+}
 ```
 
-If `curl` is unavailable, fall back to a manual ftp session (same masking rules apply):
+If `curl` is unavailable, fall back to a manual ftp session (read credentials from a temp file or stdin, never from argv — same masking rules apply):
 
 ```bash
 ftp -n -v HOST PORT <<EOF
@@ -142,7 +164,7 @@ EOF
 
 ### MySQL connectivity test
 
-Do NOT pass the password on the command line (`-p'PASS'` is visible in process listings and shell history). Use a temporary defaults file with permission `0600`, or the `MYSQL_PWD` environment variable, and delete the temp file immediately afterwards.
+Do NOT pass the password on the command line (`-p'PASS'` is visible in process listings and shell history). Use a temporary defaults file with permission `0600`, and clean it up via `trap` so the file is removed even if the command is interrupted:
 
 ```bash
 # Generate a temporary defaults file (permission 0600)
@@ -156,9 +178,12 @@ user=USER
 password=PASS
 EOF
 
+trap 'rm -f "$MYSQLDefaultsFile"' EXIT INT TERM
+
 mysql --defaults-extra-file="$MYSQLDefaultsFile" -e "SELECT 1 AS connection_test;" --connect-timeout=10
 
 rm -f "$MYSQLDefaultsFile"
+trap - EXIT INT TERM
 ```
 
 Never log the contents of the defaults file. Never echo the password to stdout, logs, or the user.
@@ -227,35 +252,60 @@ Action: Upload all files via FTP to 192.168.1.100
 Ask the user to confirm with one of:
 - "Confirm upload" / "Preview only" / "Cancel"
 
-**Upload commands** — use `curl --user` so the password is not embedded in the URL. Do NOT echo the full command back to the user, and keep the password out of shell history.
+**Upload commands** — do NOT pass credentials via `--user` on the command line (the password ends up in process argv after variable expansion). Use a temporary curl config file with permission `0600` and `trap` cleanup, same as the connectivity test. Do NOT echo the full command back to the user.
 
 Single file:
 ```bash
-curl --user "USER:PASS" -T "local_file" ftp://HOST:PORT/REMOTE_PATH/
+CurlConfig=$(mktemp)
+chmod 0600 "$CurlConfig"
+cat > "$CurlConfig" <<EOF
+user = "USER:PASS"
+EOF
+trap 'rm -f "$CurlConfig"' EXIT INT TERM
+
+curl --config "$CurlConfig" -T "local_file" ftp://HOST:PORT/REMOTE_PATH/
+
+rm -f "$CurlConfig"
+trap - EXIT INT TERM
 ```
 
-Directory (recursive — use a loop):
+Directory (recursive — use a loop, reuse the same config file):
 ```bash
+CurlConfig=$(mktemp)
+chmod 0600 "$CurlConfig"
+cat > "$CurlConfig" <<EOF
+user = "USER:PASS"
+ftp-create-dirs
+EOF
+trap 'rm -f "$CurlConfig"' EXIT INT TERM
+
 for file in $(find LOCAL_DIR -type f); do
   relative="${file#LOCAL_DIR/}"
-  curl --ftp-create-dirs --user "USER:PASS" -T "$file" "ftp://HOST:PORT/REMOTE_DIR/$relative"
+  curl --config "$CurlConfig" -T "$file" "ftp://HOST:PORT/REMOTE_DIR/$relative"
 done
+
+rm -f "$CurlConfig"
+trap - EXIT INT TERM
 ```
 
-On Windows (PowerShell) — pass credentials via variables so they are not in the command line:
+On Windows (PowerShell) — PowerShell variable expansion does NOT prevent the password from appearing in the child process argv. Use a temporary config file with restrictive ACL:
 ```powershell
-$ftpUser = "USER"
-$ftpPass = "PASS"
-Get-ChildItem -Recurse -File "LOCAL_DIR" | ForEach-Object {
-    $relative = $_.FullName.Substring("LOCAL_DIR".Length).Replace("\","/")
-    curl.exe --ftp-create-dirs --user "$($ftpUser):$($ftpPass)" -T $_.FullName "ftp://HOST:PORT/REMOTE_DIR/$relative"
+$curlConfig = [System.IO.Path]::GetTempFileName()
+icacls $curlConfig /inheritance:r /grant:r "$($env:USERNAME):(R,W)"
+"user = `"USER:PASS`"`nftp-create-dirs" | Set-Content -Path $curlConfig -NoNewline
+try {
+    Get-ChildItem -Recurse -File "LOCAL_DIR" | ForEach-Object {
+        $relative = $_.FullName.Substring("LOCAL_DIR".Length).Replace("\","/")
+        curl.exe --config $curlConfig -T $_.FullName "ftp://HOST:PORT/REMOTE_DIR/$relative"
+    }
+} finally {
+    Remove-Item -Force $curlConfig -ErrorAction SilentlyContinue
 }
-Remove-Variable ftpUser, ftpPass
 ```
 
-After upload, list the remote directory to verify (same masking rules):
+After upload, list the remote directory to verify (reuse the same config file, same masking rules):
 ```bash
-curl -s --user "USER:PASS" ftp://HOST:PORT/REMOTE_DIR/
+curl -s --config "$CurlConfig" ftp://HOST:PORT/REMOTE_DIR/
 ```
 
 ### 4B — SQL Execution
@@ -279,7 +329,7 @@ Warning: This will modify table structure and update 150 rows.
 Ask the user to confirm with one of:
 - "Execute SQL" / "Dry run (explain only)" / "Cancel"
 
-**Execution command** — use a temporary defaults file (permission 0600) instead of `-p'PASS'`. Delete it immediately afterwards.
+**Execution command** — use a temporary defaults file (permission 0600) instead of `-p'PASS'`. Clean up via `trap` so the file is removed even if interrupted.
 
 From string:
 ```bash
@@ -292,10 +342,12 @@ port=PORT
 user=USER
 password=PASS
 EOF
+trap 'rm -f "$MYSQLDefaultsFile"' EXIT INT TERM
 
 mysql --defaults-extra-file="$MYSQLDefaultsFile" DATABASE -e "SQL_STATEMENT"
 
 rm -f "$MYSQLDefaultsFile"
+trap - EXIT INT TERM
 ```
 
 From file:
@@ -309,10 +361,12 @@ port=PORT
 user=USER
 password=PASS
 EOF
+trap 'rm -f "$MYSQLDefaultsFile"' EXIT INT TERM
 
 mysql --defaults-extra-file="$MYSQLDefaultsFile" DATABASE < "path/to/file.sql"
 
 rm -f "$MYSQLDefaultsFile"
+trap - EXIT INT TERM
 ```
 
 Always capture and display the result. Never log the defaults file contents.
@@ -346,7 +400,7 @@ When SQL execution fails, follow these steps:
    - `ERROR 1146 (Table doesn't exist)` — suggest `SHOW TABLES` to verify table name
    - `ERROR 1062 (Duplicate entry)` — explain the unique constraint conflict, suggest `ON DUPLICATE KEY UPDATE`
    - `ERROR 1452 (Foreign key constraint)` — explain the reference issue, suggest checking parent table
-3. **Offer to run a diagnostic query** (read-only, no confirmation needed). Use the same defaults-file approach:
+3. **Offer to run a diagnostic query** (read-only, no confirmation needed). Use the same defaults-file + trap approach:
    ```bash
    MYSQLDefaultsFile=$(mktemp)
    chmod 0600 "$MYSQLDefaultsFile"
@@ -357,10 +411,12 @@ When SQL execution fails, follow these steps:
    user=USER
    password=PASS
    EOF
+   trap 'rm -f "$MYSQLDefaultsFile"' EXIT INT TERM
 
    mysql --defaults-extra-file="$MYSQLDefaultsFile" DATABASE -e "SHOW TABLES; SHOW COLUMNS FROM problematic_table;"
 
    rm -f "$MYSQLDefaultsFile"
+   trap - EXIT INT TERM
    ```
 4. **Present the corrected SQL** and ask for explicit confirmation before re-executing
 5. **Do NOT auto-retry** — always let the user review and approve the fix. A modified SQL statement is a new write operation and requires fresh confirmation.
@@ -415,9 +471,12 @@ A: 默认不保存密码。如果你明确同意保存，Agent 会优先使用�
 
 - Never echo passwords in plain text to the user; always mask with `****`
 - Never write credentials to project files, logs, or git-tracked files
-- Never put passwords on the command line (`-p'PASS'` or `ftp://USER:PASS@HOST/`) — they are visible in process listings and shell history
-- For MySQL, prefer a temporary `--defaults-extra-file` with permission `0600`, deleted immediately after use; or the `MYSQL_PWD` environment variable
-- For FTP, prefer `curl --user "USER:PASS"` (or SFTP/FTPS) and keep the password out of shell history
+- Never put passwords on the command line (`-p'PASS'`, `ftp://USER:PASS@HOST/`, or `--user "USER:PASS"`) — they are visible in process listings (`ps`), shell history, and audit logs even after variable expansion
+- For MySQL, use a temporary `--defaults-extra-file` with permission `0600` and `trap` cleanup on `EXIT INT TERM`
+- For FTP, use a temporary curl config file (`--config`) with permission `0600` and `trap` cleanup — do NOT use `--user` on the command line
+- On Windows (PowerShell), variable expansion does NOT prevent the password from appearing in child process argv — use a temporary config file with restrictive ACL and `finally` cleanup
+- Prefer SFTP or FTPS over plain FTP (plain FTP transmits credentials and data in cleartext)
+- Never log the contents of any temporary credential file (curl config or MySQL defaults file)
 - Passwords are NOT persisted by default. Only non-secret metadata is saved.
 - Do not claim that the platform's memory is always local, encrypted, or never synced — this is platform-dependent
 - Remind users to clear saved credentials when working on shared machines

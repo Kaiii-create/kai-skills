@@ -8,7 +8,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const {
   listAvailableSkills,
@@ -224,5 +224,130 @@ describe('main() 退出码', () => {
   test('main(["unknowncommand"]) 返回非0(未知命令)', () => {
     const code = silent(() => main(['unknowncommand']));
     assert.notStrictEqual(code, 0);
+  });
+});
+
+// ===== 重复选项测试(必须报错)=====
+describe('重复选项检测', () => {
+  test('parseInstallArgs(["all", "-t", "codex", "-t", "claude"]) → 重复 -t 报错', () => {
+    assert.throws(() => parseInstallArgs(['all', '-t', 'codex', '-t', 'claude']), CliError);
+  });
+
+  test('parseInstallArgs(["all", "--target", "codex", "--target", "claude"]) → 重复 --target 报错', () => {
+    assert.throws(() => parseInstallArgs(['all', '--target', 'codex', '--target', 'claude']), CliError);
+  });
+
+  test('parseInstallArgs(["all", "-t", "codex", "--target", "claude"]) → -t 和 --target 混用报错', () => {
+    assert.throws(() => parseInstallArgs(['all', '-t', 'codex', '--target', 'claude']), CliError);
+  });
+
+  test('parseInstallArgs(["all", "-p", "--project"]) → 重复 -p/--project 报错', () => {
+    assert.throws(() => parseInstallArgs(['all', '-p', '--project']), CliError);
+  });
+
+  test('parseInstallArgs(["all", "-a", "--auto"]) → 重复 -a/--auto 报错', () => {
+    assert.throws(() => parseInstallArgs(['all', '-a', '--auto']), CliError);
+  });
+
+  test('main(["list", "--installed", "--installed"]) → 重复 --installed 返回非0', () => {
+    const code = silent(() => main(['list', '--installed', '--installed']));
+    assert.notStrictEqual(code, 0);
+  });
+});
+
+// ===== 空 target 和空白 target 测试 =====
+describe('空 target 测试', () => {
+  test('resolveTargets(",", false) → 空 target 抛出 CliError', () => {
+    assert.throws(() => resolveTargets(',', false), CliError);
+  });
+
+  test('resolveTargets(" , ", false) → 全空白 target 抛出 CliError', () => {
+    assert.throws(() => resolveTargets(' , ', false), CliError);
+  });
+
+  test('resolveTargets("codex, codex,claude", false) → 带空白去重后长度为2', () => {
+    const t = resolveTargets('codex, codex,claude', false);
+    assert.strictEqual(t.length, 2);
+    assert.deepStrictEqual(t, ['codex', 'claude']);
+  });
+});
+
+// ===== 用户级临时 HOME 测试(子进程,不污染真实用户目录)=====
+describe('用户级临时 HOME 安装', () => {
+  const CLI_PATH = path.join(PROJECT_ROOT, 'bin', 'kai-skills.js');
+
+  // 在子进程中用临时 HOME/USERPROFILE 运行 CLI,避免污染真实用户目录
+  function runCliWithTempHome(args) {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kai-home-test-'));
+    try {
+      const env = {
+        ...process.env,
+        HOME: tmpHome,
+        USERPROFILE: tmpHome,  // Windows 上 os.homedir() 读 USERPROFILE
+      };
+      const output = execFileSync(process.execPath, [CLI_PATH, ...args], {
+        env,
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+      return { output, tmpHome };
+    } finally {
+      // 注意: tmpHome 由调用方在验证后清理,这里只确保异常时也清理
+    }
+  }
+
+  test('用户级安装 server-autopilot 到 codex → 临时 HOME 下 SKILL.md 存在', () => {
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kai-home-test-'));
+    try {
+      const env = {
+        ...process.env,
+        HOME: tmpHome,
+        USERPROFILE: tmpHome,
+      };
+      execFileSync(process.execPath, [CLI_PATH, 'install', 'server-autopilot', '-t', 'codex'], {
+        env,
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+      const skillFile = path.join(tmpHome, '.agents', 'skills', 'server-autopilot', 'SKILL.md');
+      assert.ok(fs.existsSync(skillFile), '用户级 SKILL.md 应存在: ' + skillFile);
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
+  });
+
+  test('用户级安装后真实用户目录未被污染', () => {
+    // 记录真实 ~/.agents/skills/server-autopilot 安装前的状态
+    const realAgentsDir = path.join(os.homedir(), '.agents', 'skills');
+    const beforeExists = fs.existsSync(path.join(realAgentsDir, 'server-autopilot', 'SKILL.md'));
+    const beforeMtime = beforeExists
+      ? fs.statSync(path.join(realAgentsDir, 'server-autopilot', 'SKILL.md')).mtimeMs
+      : null;
+
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kai-home-test-'));
+    try {
+      const env = {
+        ...process.env,
+        HOME: tmpHome,
+        USERPROFILE: tmpHome,
+      };
+      execFileSync(process.execPath, [CLI_PATH, 'install', 'server-autopilot', '-t', 'codex'], {
+        env,
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+    } finally {
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
+
+    // 验证真实目录未被修改
+    const afterExists = fs.existsSync(path.join(realAgentsDir, 'server-autopilot', 'SKILL.md'));
+    const afterMtime = afterExists
+      ? fs.statSync(path.join(realAgentsDir, 'server-autopilot', 'SKILL.md')).mtimeMs
+      : null;
+    assert.strictEqual(beforeExists, afterExists, '真实用户目录的 skill 存在性不应改变');
+    if (beforeExists) {
+      assert.strictEqual(beforeMtime, afterMtime, '真实用户目录的 SKILL.md mtime 不应改变');
+    }
   });
 });
