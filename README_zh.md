@@ -18,23 +18,23 @@
 
 ### Codex：用户级安装
 
-用户级技能可在不同项目中使用。将完整技能目录复制到 `~/.codex/skills/`：
+用户级技能可在不同项目中使用。将完整技能目录复制到 `~/.agents/skills/`：
 
 ```bash
 git clone https://github.com/Kaiii-create/kai-skills.git
-mkdir -p ~/.codex/skills
-cp -R kai-skills/server-autopilot ~/.codex/skills/
+mkdir -p ~/.agents/skills
+cp -R kai-skills/server-autopilot ~/.agents/skills/
 ```
 
 安装后启动一个新的 Codex 会话，并使用自然语言描述任务；也可以通过技能名称显式调用。
 
 ### Codex：项目级安装
 
-如需让仓库内的协作者共享技能，可将技能目录放在项目的 `.codex/skills/` 中并提交到 Git：
+如需让仓库内的协作者共享技能，可将技能目录放在项目的 `.agents/skills/` 中并提交到 Git：
 
 ```bash
-mkdir -p .codex/skills
-cp -R /path/to/kai-skills/server-autopilot .codex/skills/
+mkdir -p .agents/skills
+cp -R /path/to/kai-skills/server-autopilot .agents/skills/
 ```
 
 Codex 官方说明：[Agent Skills](https://developers.openai.com/codex/skills)
