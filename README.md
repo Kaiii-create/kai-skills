@@ -1,8 +1,8 @@
 # Kai Agent Skills
 
-**[中文](#中文说明)**
+**English** | **[中文](#中文说明)**
 
-A collection of practical Agent Skills for [QoderWork](https://qoder.com), designed to automate everyday development and operations workflows.
+A collection of practical Agent Skills designed to automate everyday development and operations workflows.
 
 ## Available Skills
 
@@ -57,9 +57,11 @@ Issues and pull requests are welcome.
 
 <a id="中文说明"></a>
 
+**[English](#kai-agent-skills)** | **中文**
+
 ## Kai Agent Skills
 
-一系列面向 [QoderWork](https://qoder.com) 的实用 Agent Skills，用于自动化日常开发与运维工作流。
+一系列实用的 Agent Skills 合集，用于自动化日常开发与运维工作流。
 
 ## 可用技能
 
