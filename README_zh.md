@@ -104,14 +104,24 @@ Codex 官方说明：[Agent Skills](https://developers.openai.com/codex/skills)
 
 ```text
 kai-skills/
+├── package.json              # npm 包定义(发布用)
+├── bin/
+│   └── kai-skills.js         # CLI 安装器(发布用)
 ├── README.md
 ├── README_zh.md
 ├── LICENSE
-└── server-autopilot/
-    ├── SKILL.md
-    ├── README.md
-    └── README_zh.md
+├── server-autopilot/         # ← skill 内容
+│   ├── SKILL.md
+│   ├── README.md
+│   └── README_zh.md
+└── weather/                  # ← 假设以后新增的 skill
+    └── SKILL.md
 ```
+
+仓库里有两类东西:
+
+- **CLI 工程文件**:`package.json`、`bin/` —— 这是 npm 安装器的源码,用来实现 `npx @kaiii-create/kai-skills install ...` 命令。普通用户不用关心,直接用 npx 即可。
+- **skill 内容**:每个独立目录(如 `server-autopilot/`),里面至少包含一个 `SKILL.md`。
 
 每个技能使用独立目录：
 
