@@ -2,7 +2,7 @@
 
 **[中文](README_zh.md)**
 
-A collection of reusable Agent Skills for automating everyday development and operations workflows.
+A collection of reusable Agent Skills for development, operations, creative, and everyday agent workflows.
 
 These skills follow a portable directory structure centered on `SKILL.md` and have been tested on multiple compatible agent platforms. This guide uses **OpenAI Codex** as the primary installation example; installation paths, tool names, and permission models may differ on other platforms.
 
@@ -11,6 +11,7 @@ These skills follow a portable directory structure centered on `SKILL.md` and ha
 | Skill | Description | Status |
 |-------|-------------|--------|
 | [server-autopilot](./server-autopilot/) | Parse FTP/MySQL credentials, test connectivity, and upload code or execute SQL after user confirmation | Stable |
+| [photo-retoucher](./photo-retoucher/) | Natural-language AI photo retouching for portraits, rescue edits, weddings, ID/headshots, wardrobe/background edits, restoration, and localized fixes | Stable |
 
 > More skills are coming. Star & Watch the repository to stay updated.
 
@@ -19,11 +20,11 @@ These skills follow a portable directory structure centered on `SKILL.md` and ha
 ### One-line install via npx (recommended)
 
 ```bash
-# Install a single skill to Codex
-npx @kaiii-create/kai-skills install server-autopilot -t codex
+# Install Photo Retoucher to Codex
+npx @kaiii-create/kai-skills install photo-retoucher -t codex
 
 # Install a single skill to multiple platforms
-npx @kaiii-create/kai-skills install server-autopilot -t codex,claude
+npx @kaiii-create/kai-skills install photo-retoucher -t codex,claude
 
 # Install ALL skills to a specific platform
 npx @kaiii-create/kai-skills install all -t claude
@@ -63,16 +64,27 @@ User-level skills are available across projects. Copy the complete skill directo
 ```bash
 git clone https://github.com/Kaiii-create/kai-skills.git
 mkdir -p ~/.agents/skills
-cp -R kai-skills/server-autopilot ~/.agents/skills/
+cp -R kai-skills/photo-retoucher ~/.agents/skills/
 ```
 
 Start a new Codex session after installation and describe the task in natural language. You can also invoke the skill explicitly by name.
+
+Example Photo Retoucher prompts:
+
+```text
+Retouch this portrait naturally. Keep the person recognizable.
+救一下这张照片，自然度 2，保持本人。
+人物精修，但不要有明显 P 图感。
+只把眼睛稍微放大一点，其他不要动。
+```
+
+Photo Retoucher defaults to **portrait retouch level 0** unless person retouching is authorized. Explicit local edits remain local. See [Photo Retoucher documentation](./photo-retoucher/README.md) for details.
 
 To share a skill with collaborators in a repository, place it under the project's `.agents/skills/` directory and commit it to Git:
 
 ```bash
 mkdir -p .agents/skills
-cp -R /path/to/kai-skills/server-autopilot .agents/skills/
+cp -R /path/to/kai-skills/photo-retoucher .agents/skills/
 ```
 
 Official Codex documentation: https://developers.openai.com/codex/skills
