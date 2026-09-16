@@ -1,0 +1,50 @@
+default: 0
+principle: "Levels are permission ceilings, not mandatory checklists. Diagnose first; apply Minimum Necessary Edit."
+levels:
+  0:
+    label: locked
+    automatic_person_edits: false
+    explicit_person_edits: allowed_and_local_only
+  1:
+    label: light
+    blemish_cleanup: true
+    skin_tone_balance: subtle
+    skin_smoothing: subtle
+    texture_preservation: strong
+    flyaway_cleanup: subtle
+    face_reshape: false
+    eye_enlarge: false
+    body_reshape: false
+  2:
+    label: refined
+    blemish_cleanup: true
+    skin_tone_balance: natural
+    skin_smoothing: natural
+    texture_preservation: strong
+    face_slim: subtle_if_beneficial
+    jawline_refine: subtle_if_beneficial
+    eye_refine: subtle_if_beneficial
+    eye_enlarge: very_subtle_if_beneficial
+    body_proportion: very_subtle_if_beneficial
+    posture_refine: very_subtle_if_beneficial
+    hair_cleanup: natural
+  3:
+    label: commercial
+    skin_retouch: advanced_natural
+    texture_preservation: strong
+    face_refine: moderate_if_beneficial
+    eye_refine: moderate_if_beneficial
+    body_refine: subtle_if_beneficial
+    hair_retouch: advanced
+    clothing_cleanup: advanced
+aliases:
+  "人物简单修改": 1
+  "简单修一下人物": 1
+  "人物轻修": 1
+  "轻修": 1
+  "人物精修": 2
+  "精修一下人物": 2
+  "人像精修": 2
+  "精修": 2
+  "人物商业精修": 3
+  "商业精修人物": 3

@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Photo Retoucher EditState","type":"object","properties":{"source":{"type":"string"},"current_stable":{"type":"string"},"completed_operations":{"type":"array"},"locks":{"type":"object"},"qc_status":{"type":"object"},"revision":{"type":"integer","minimum":0}}}

@@ -1,0 +1,63 @@
+cases:
+  - id: pimple_only
+    input: "把右脸这颗痘去掉"
+    expected_mode: local_edit
+    allowed: [target_blemish]
+    forbidden: [face_shape, eyes, nose, mouth, hair, body, clothing, background]
+  - id: background_strict
+    input: "换成海边，人不要动"
+    expected_mode: background_edit
+    allowed: [background, integration_light, contact_shadow, depth_match]
+    forbidden: [identity, face_shape, body_shape, pose, clothing, hairstyle]
+  - id: rescue_natural
+    input: "老婆这张拍废了，救一下，自然点"
+    expected_mode: rescue_photo
+    naturalness: 2
+    required: [diagnose_camera, diagnose_lighting, diagnose_composition, identity_lock]
+  - id: id_blue_suit
+    input: "蓝底证件照，黑西服白衬衫"
+    expected_mode: id_photo
+    required: [solid_background, wardrobe_edit, identity_lock]
+  - id: official_visa
+    input: "做日本签证照片"
+    expected_mode: id_photo
+    required: [verify_official_requirements, compliance_first]
+  - id: multi_person
+    input: "新娘稍微瘦脸，新郎只去油光"
+    expected_mode: wedding_retouch
+    required: [separate_subject_ids, scoped_operations]
+    forbidden: [cross_subject_face_edit]
+  - id: revision_locality
+    input: "背景保留，脸刚才瘦过头了，退回来一点"
+    required: [use_current_state, lock_current_background, reduce_face_slim]
+    forbidden: [regenerate_background]
+  - id: rescue_does_not_beautify
+    input: "老婆这张拍废了，救一下，自然点，保持本人"
+    expected_mode: rescue_photo
+    naturalness: 2
+    portrait_retouch_level: 0
+    forbidden: [skin_smoothing, face_slim, eye_enlarge, body_reshape]
+  - id: rescue_light_person
+    input: "老婆这张救一下，人物简单修改，自然点"
+    expected_mode: rescue_photo
+    portrait_retouch_level: 1
+    forbidden: [face_reshape, eye_enlarge, body_reshape]
+  - id: rescue_refined_person
+    input: "老婆这张救一下，人物精修，自然点"
+    expected_mode: rescue_photo
+    portrait_retouch_level: 2
+    required: [identity_lock, diagnose_before_person_edits, minimum_necessary_edit]
+  - id: explicit_eye_at_level_zero
+    input: "其他都不要动，眼睛稍微大一点"
+    portrait_retouch_level: 0
+    allowed: [eye_enlarge_subtle]
+    forbidden: [skin_smoothing, face_slim, jawline, body_reshape, hair, clothing, background]
+  - id: identity_lock_not_person_lock
+    input: "人物精修，但保持本人"
+    portrait_retouch_level: 2
+    required: [identity_lock]
+    forbidden: [identity_change]
+  - id: strict_person_lock_wins
+    input: "商业精修背景，但人物不要动"
+    portrait_retouch_level: 0
+    forbidden: [all_person_edits]

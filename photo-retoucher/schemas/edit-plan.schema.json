@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Photo Retoucher EditPlan",
+  "type": "object",
+  "required": ["mode", "naturalness", "operations", "locks", "qc"],
+  "properties": {
+    "mode": {"type": "string"},
+    "naturalness": {"type": "number", "minimum": 1, "maximum": 5},
+    "subjects": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "role": {"type": "string"}}}},
+    "operations": {"type": "array", "items": {"type": "object", "required": ["type"], "properties": {"id": {"type": "string"}, "type": {"type": "string"}, "target": {"type": "string"}, "strength": {"type": "string"}, "parameters": {"type": "object"}}}},
+    "locks": {"type": "object", "additionalProperties": true},
+    "qc": {"type": "object", "additionalProperties": true},
+    "export": {"type": "object", "additionalProperties": true},
+    "portrait_retouch_level": {"type": "integer", "minimum": 0, "maximum": 3, "default": 0},
+    "explicit_person_edits": {"type": "array", "items": {"type": "string"}, "default": []}
+  }
+}

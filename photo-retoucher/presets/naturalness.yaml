@@ -1,0 +1,38 @@
+default: 2
+levels:
+  1:
+    label: repair
+    skin_smoothing: minimal
+    reshape: off
+    texture_preservation: maximum
+    style_strength: minimal
+  2:
+    label: natural
+    skin_smoothing: low
+    reshape: subtle_if_requested
+    texture_preservation: high
+    style_strength: low
+  3:
+    label: portrait
+    skin_smoothing: medium
+    reshape: moderate_if_requested
+    texture_preservation: high
+    style_strength: medium
+  4:
+    label: commercial
+    skin_smoothing: medium
+    reshape: medium_if_requested
+    texture_preservation: high
+    style_strength: medium_high
+  5:
+    label: strong_style
+    skin_smoothing: user_directed
+    reshape: user_directed
+    texture_preservation: medium_high
+    style_strength: high
+aliases:
+  "自然点": 2
+  "别看出来P过": 1
+  "原汁原味": 1
+  "精修": 3
+  "商业精修": 4

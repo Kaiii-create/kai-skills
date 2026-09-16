@@ -1,0 +1,21 @@
+name: photo-retoucher
+display_name: Photo Retoucher
+display_name_zh: AI 专业修图师
+entrypoint: SKILL.md
+language: [zh, en]
+capabilities:
+  - portrait_retouch
+  - rescue_photo
+  - wedding_retouch
+  - id_photo
+  - professional_headshot
+  - wardrobe_edit
+  - background_edit
+  - local_edit
+  - photo_restore
+  - batch_retouch
+requires:
+  - image_analysis
+  - image_editing
+optional:
+  - web_search_for_official_id_requirements

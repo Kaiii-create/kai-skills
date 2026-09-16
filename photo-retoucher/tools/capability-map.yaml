@@ -1,0 +1,16 @@
+operations:
+  analyze_image: [vision_analysis]
+  select_subject: [subject_selection, semantic_selection, mask]
+  remove_blemish: [healing, blemish_removal, localized_instruct_edit]
+  tone_color: [tone_adjustment, color_adjustment, localized_adjustment]
+  crop_resize: [crop, resize, smart_crop]
+  straighten: [straighten, perspective_correction]
+  background_solid: [remove_background, mask, solid_fill]
+  background_replace: [mask, generative_background, instruct_edit]
+  remove_object: [object_removal, generative_fill, instruct_edit]
+  wardrobe_edit: [instruct_edit, generative_fill]
+  hair_repair: [localized_instruct_edit, generative_fill]
+  face_body_shape: [localized_geometry, liquify_like, localized_instruct_edit]
+  blur_background: [lens_blur, depth_blur]
+  restore_photo: [healing, denoise, tone_color, localized_reconstruction]
+preference: deterministic_first
