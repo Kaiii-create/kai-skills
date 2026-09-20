@@ -8,7 +8,7 @@ cases:
     input: "换成海边，人不要动"
     expected_mode: background_edit
     allowed: [background, integration_light, contact_shadow, depth_match]
-    forbidden: [identity, face_shape, body_shape, pose, clothing, hairstyle]
+    forbidden: [identity, face_shape, body_shape, pose, clothing, hairstyle, regenerate_subject]
   - id: rescue_natural
     input: "老婆这张拍废了，救一下，自然点"
     expected_mode: rescue_photo
@@ -17,7 +17,7 @@ cases:
   - id: id_blue_suit
     input: "蓝底证件照，黑西服白衬衫"
     expected_mode: id_photo
-    required: [solid_background, wardrobe_edit, identity_lock]
+    required: [solid_background, wardrobe_edit, identity_lock, face_geometry_lock]
   - id: official_visa
     input: "做日本签证照片"
     expected_mode: id_photo
@@ -47,6 +47,7 @@ cases:
     expected_mode: rescue_photo
     portrait_retouch_level: 2
     required: [identity_lock, diagnose_before_person_edits, minimum_necessary_edit]
+    forbidden: [face_slim, eye_enlarge, nose_reshape, lip_reshape, body_reshape]
   - id: explicit_eye_at_level_zero
     input: "其他都不要动，眼睛稍微大一点"
     portrait_retouch_level: 0
@@ -56,8 +57,65 @@ cases:
     input: "人物精修，但保持本人"
     portrait_retouch_level: 2
     required: [identity_lock]
-    forbidden: [identity_change]
+    forbidden: [identity_change, face_slim, eye_enlarge, nose_reshape, lip_reshape]
   - id: strict_person_lock_wins
     input: "商业精修背景，但人物不要动"
     portrait_retouch_level: 0
     forbidden: [all_person_edits]
+
+  - id: refined_portrait_no_geometry
+    input: "这张人物精修一下"
+    expected_mode: portrait_retouch
+    portrait_retouch_level: 2
+    allowed: [blemish_cleanup, skin_tone_balance, skin_smoothing, hair_cleanup, local_light_refine]
+    forbidden: [face_slim, eye_enlarge, nose_reshape, lip_reshape, jaw_geometry, body_reshape]
+
+  - id: commercial_portrait_no_geometry
+    input: "人物商业精修"
+    expected_mode: portrait_retouch
+    portrait_retouch_level: 3
+    required: [identity_lock, texture_preservation]
+    forbidden: [face_geometry_change, body_geometry_change]
+
+  - id: explicit_face_slim_only
+    input: "人物精修，脸稍微瘦一点，其他五官不要动"
+    expected_mode: portrait_retouch
+    portrait_retouch_level: 2
+    allowed: [face_slim_subtle]
+    forbidden: [eye_enlarge, nose_reshape, lip_reshape, age_change]
+
+  - id: wedding_polish_no_face_redesign
+    input: "婚纱照精修一下，自然一点"
+    expected_mode: wedding_retouch
+    required: [identity_lock, separate_subject_ids, clothing_scene_cleanup]
+    forbidden: [face_geometry_change, body_geometry_change, generic_beauty_face]
+
+  - id: headshot_professional_not_new_face
+    input: "做成专业职业形象照，换西装和办公室背景"
+    expected_mode: professional_headshot
+    required: [identity_lock, face_geometry_lock, wardrobe_edit, background_edit]
+    forbidden: [face_regeneration, face_geometry_change, age_change, generic_professional_face]
+
+  - id: wardrobe_face_lock
+    input: "把衣服换成黑色西装，脸不要动"
+    expected_mode: wardrobe_edit
+    required: [face_geometry_lock, smallest_feasible_mask]
+    forbidden: [face_regeneration, head_shape_change, hairstyle_change, body_shape_change]
+
+  - id: background_integration_not_subject_regeneration
+    input: "背景换成夜景，人物保持原样，光线融合自然"
+    expected_mode: background_edit
+    allowed: [background, ambient_color, rim_light, contact_shadow, depth_match]
+    forbidden: [face_regeneration, skin_texture_regeneration, hair_structure_change, clothing_redesign, anatomy_change]
+
+  - id: old_photo_softness_over_hallucination
+    input: "修复这张老照片，尽量清晰但一定要像本人"
+    expected_mode: photo_restore
+    required: [identity_lock, source_pixels_authoritative, preserve_uncertainty, local_repair]
+    forbidden: [full_face_regeneration, generic_plausible_face, unsupported_high_frequency_detail]
+
+  - id: old_photo_missing_face_region
+    input: "脸有一块损坏了，帮我修复"
+    expected_mode: photo_restore
+    required: [conservative_reconstruction, smallest_feasible_edit_region, identity_qc]
+    forbidden: [full_face_regeneration, confident_hallucination]
