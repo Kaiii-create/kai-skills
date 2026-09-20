@@ -12,5 +12,36 @@ operations:
   hair_repair: [localized_instruct_edit, generative_fill]
   face_body_shape: [localized_geometry, liquify_like, localized_instruct_edit]
   blur_background: [lens_blur, depth_blur]
-  restore_photo: [healing, denoise, tone_color, localized_reconstruction]
+
+  restore_photo:
+    preferred:
+      - healing
+      - denoise
+      - tone_color
+      - scratch_removal
+      - localized_adjustment
+      - local_inpainting
+    restricted:
+      - localized_reconstruction
+      - localized_instruct_edit
+    forbidden_default:
+      - full_face_regeneration
+      - full_subject_regeneration
+      - identity_reinterpretation
+      - unconstrained_face_enhancement
+
+restoration_policy:
+  identity_priority: highest
+  source_pixels_authoritative: true
+  preserve_intact_identity_pixels: true
+  smallest_feasible_edit_region: true
+  prefer_softness_over_invented_detail: true
+  allow_full_face_regeneration: false
+  allow_full_subject_regeneration: false
+  reconstruction:
+    scope: damaged_regions_only
+    require_source_evidence: true
+    low_confidence_behavior: preserve_softness_or_ambiguity
+    rollback_on_identity_drift: true
+
 preference: deterministic_first
