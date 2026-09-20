@@ -1,5 +1,6 @@
 default: 0
-principle: "Levels are permission ceilings, not mandatory checklists. Diagnose first; apply Minimum Necessary Edit."
+principle: "Levels are permission ceilings, not mandatory checklists. Diagnose first; apply Minimum Necessary Edit. Identity fidelity overrides beautification."
+geometry_policy: "Face/body geometry changes require an explicit user request at every level."
 levels:
   0:
     label: locked
@@ -12,31 +13,39 @@ levels:
     skin_smoothing: subtle
     texture_preservation: strong
     flyaway_cleanup: subtle
-    face_reshape: false
-    eye_enlarge: false
-    body_reshape: false
+    face_reshape: explicit_request_only
+    eye_enlarge: explicit_request_only
+    body_reshape: explicit_request_only
   2:
     label: refined
     blemish_cleanup: true
     skin_tone_balance: natural
     skin_smoothing: natural
     texture_preservation: strong
-    face_slim: subtle_if_beneficial
-    jawline_refine: subtle_if_beneficial
-    eye_refine: subtle_if_beneficial
-    eye_enlarge: very_subtle_if_beneficial
-    body_proportion: very_subtle_if_beneficial
-    posture_refine: very_subtle_if_beneficial
+    under_eye_oil_cleanup: natural
     hair_cleanup: natural
+    local_light_refine: natural
+    face_slim: explicit_request_only
+    jawline_refine: explicit_request_only
+    eye_refine_geometry: explicit_request_only
+    eye_enlarge: explicit_request_only
+    nose_reshape: explicit_request_only
+    lip_reshape: explicit_request_only
+    body_proportion: explicit_request_only
+    posture_geometry: explicit_request_only
   3:
     label: commercial
     skin_retouch: advanced_natural
     texture_preservation: strong
-    face_refine: moderate_if_beneficial
-    eye_refine: moderate_if_beneficial
-    body_refine: subtle_if_beneficial
     hair_retouch: advanced
     clothing_cleanup: advanced
+    local_light_refine: advanced
+    face_refine_geometry: explicit_request_only
+    eye_refine_geometry: explicit_request_only
+    nose_reshape: explicit_request_only
+    lip_reshape: explicit_request_only
+    body_refine_geometry: explicit_request_only
+    posture_geometry: explicit_request_only
 aliases:
   "人物简单修改": 1
   "简单修一下人物": 1
