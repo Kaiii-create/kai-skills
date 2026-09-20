@@ -6,10 +6,58 @@
   "properties": {
     "mode": {"type": "string"},
     "naturalness": {"type": "number", "minimum": 1, "maximum": 5},
-    "subjects": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "role": {"type": "string"}}}},
-    "operations": {"type": "array", "items": {"type": "object", "required": ["type"], "properties": {"id": {"type": "string"}, "type": {"type": "string"}, "target": {"type": "string"}, "strength": {"type": "string"}, "parameters": {"type": "object"}}}},
-    "locks": {"type": "object", "additionalProperties": true},
-    "qc": {"type": "object", "additionalProperties": true},
+    "subjects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string"},
+          "role": {"type": "string"},
+          "identity_reference": {"type": "string"}
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "target": {"type": "string"},
+          "strength": {"type": "string"},
+          "parameters": {"type": "object"},
+          "explicitly_requested": {"type": "boolean", "default": false},
+          "identity_risk": {"type": "string", "enum": ["none", "low", "medium", "high"]},
+          "edit_scope": {"type": "string", "enum": ["global", "subject", "region", "damaged_pixels_only"]}
+        }
+      }
+    },
+    "locks": {
+      "type": "object",
+      "properties": {
+        "identity_lock": {"type": "boolean", "default": true},
+        "face_geometry_lock": {"type": "boolean", "default": true},
+        "body_geometry_lock": {"type": "boolean", "default": true},
+        "protected_subjects": {"type": "array", "items": {"type": "string"}},
+        "protected_regions": {"type": "array", "items": {"type": "string"}},
+        "preserve_intact_identity_pixels": {"type": "boolean", "default": true},
+        "original_reference": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "qc": {
+      "type": "object",
+      "properties": {
+        "identity_compare_required": {"type": "boolean", "default": true},
+        "compare_against": {"type": "string", "enum": ["original", "last_stable", "original_and_last_stable"]},
+        "rollback_on_identity_drift": {"type": "boolean", "default": true},
+        "max_automatic_attempts": {"type": "integer", "minimum": 0, "maximum": 5, "default": 2}
+      },
+      "additionalProperties": true
+    },
     "export": {"type": "object", "additionalProperties": true},
     "portrait_retouch_level": {"type": "integer", "minimum": 0, "maximum": 3, "default": 0},
     "explicit_person_edits": {"type": "array", "items": {"type": "string"}, "default": []}
